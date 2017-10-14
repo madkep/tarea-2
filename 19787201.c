@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <sys/syscall.h>
 
 typedef struct {
     int filas;
@@ -12,12 +13,13 @@ typedef struct {
 }Matriz;
 
 typedef struct{
-  int filas;
-  int columnas;
+  int i;
+  int j;
 }Filasycol;
 
 
 Matriz mat1,mat2,mat3;
+
 
 void coordinador();
 int **crearMatriz(int filas,int columnas);
@@ -30,9 +32,9 @@ int main(){
 }
 
 void coordinador(){
-  int buffer1,buffer2,i,j;
-  //Filasycol matfc1, matfc2, matfc3;
+  int buffer1,buffer2,i,j,contador=0;
   FILE *fp;
+
 	fp = fopen( "mat.txt","r");
 	if (fp==NULL) {fputs ("File error",stderr); exit (1);}
 
@@ -62,16 +64,36 @@ void coordinador(){
     }
   }
 
+  if(mat1.columnas!=mat2.filas){
+    printf("Las Matrices no se pueden multiplicar\n");
+    exit(0);
+  }
+
   printf("Matriz A\n");
   mostrarMatriz(mat1);
   printf("\n");
   printf("Matriz B\n");
   mostrarMatriz(mat2);
+  printf("\n");
 
+    mat3.filas=mat1.filas;
+    mat3.columnas=mat2.columnas;
+    mat3.matriz=crearMatriz(mat3.filas,mat3.columnas);
 
+    for(i = 0; i < mat3.filas; i++) {
+       for(j = 0; j < mat3.columnas; j++) {
 
-
-
+          Filasycol *vector = (Filasycol*) malloc(sizeof(Filasycol));
+          vector->i = i;
+          vector->j = j;
+          pthread_t tid;
+          pthread_create(&tid,NULL,calcular,(void *)vector);
+          pthread_join(tid, NULL);
+          contador++;
+       }
+    }
+    printf("\nMatriz 3\n");
+    mostrarMatriz(mat3);
   }
 
   int **crearMatriz(int filas,int columnas){
@@ -97,7 +119,20 @@ void coordinador(){
 
 
   void *calcular(void *param){
-    
+    Filasycol *vector = (Filasycol*)param;
+    int n, sum = 0,mayor;
+    if(mat3.filas>=mat3.columnas) mayor=mat3.filas;
+    else mayor=mat3.columnas;
+    pid_t pidt = syscall(SYS_gettid);
 
+    for(n = 0; n< mayor; n++){
+       sum += mat1.matriz[vector->i][n] * mat2.matriz[n][vector->j];
+    }
+
+    mat3.matriz[vector->i][vector->j] = sum;
+
+    printf("Proceso(%d) calculando elemento [%d,%d]\n",pidt,vector->i,vector->j );
+
+    pthread_exit(0);
 
   }
