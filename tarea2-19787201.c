@@ -1,3 +1,11 @@
+/* Tarea 2
+   Felipe Ignacio Céspedes Cordero
+   19787201-2
+   ICI2341
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
